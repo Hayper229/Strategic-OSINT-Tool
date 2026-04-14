@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEXUS ULTIMATE v34.0</title>
+    <script src="https://cloudflare.com"></script>
+    <style>
+        :root { --neon: #00ff88; --bg: #050505; }
+        body { background: var(--bg); color: #888; font-family: 'Consolas', monospace; padding: 20px; }
+        .terminal { background: #000; border: 1px solid #1a1a1a; height: 250px; overflow-y: auto; padding: 15px; margin-bottom: 20px; font-size: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: #0d0d0d; border: 1px solid #1a1a1a; padding: 15px; border-left: 3px solid #333; }
+        .card h2 { color: var(--neon); font-size: 14px; margin-top: 0; text-transform: uppercase; }
+        textarea { width: 100%; background: #000; border: 1px solid #222; color: var(--neon); padding: 10px; height: 100px; margin-bottom: 10px; }
+        button { background: var(--neon); color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .match-alert { background: rgba(0,255,136,0.1); border: 1px solid var(--neon); color: #fff; padding: 10px; margin-top: 10px; animation: blink 2s infinite; }
+        @keyframes blink { 50% { opacity: 0.7; } }
+        .PROCESS { color: #ffae00; } .OK { color: var(--neon); }
+    </style>
+</head>
+<body>
+    <h1>NEXUS ULTIMATE // NEURAL FUSION v34.0</h1>
+    <div class="terminal" id="term"></div>
+    <textarea id="input_data" placeholder="Вставьте данные цели здесь..."></textarea><br>
+    <button onclick="start()">ЗАПУСТИТЬ КОМБАЙН</button>
+
+    <div id="results" class="grid" style="margin-top:20px;"></div>
+
+    <script>
+        var socket = io();
+        function start() {
+            var text = document.getElementById('input_data').value;
+            document.getElementById('results').innerHTML = '';
+            socket.emit('start_scan', {content: text});
+        }
+
+        socket.on('log_event', function(d) {
+            var el = document.getElementById('term');
+            el.innerHTML += `<div><span style="color:#444">[${d.ts}]</span> <span class="${d.status}">[${d.tag}] ${d.msg}</span></div>`;
+            el.scrollTop = el.scrollHeight;
+        });
+
+        socket.on('scan_complete', function(data) {
+            var res = document.getElementById('results');
+            var matches = data.matches.map(m => `<div class="match-alert">🧬 ${m}</div>`).join('');
+            
+            res.innerHTML = `
+                <div class="card"><h2>Core Identity</h2>
+                    <b>FIO:</b> ${data.core.fio.join(', ')}<br>
+                    <b>TEL:</b> ${data.core.phones.join(', ')}<br>
+                    <b>INN:</b> ${data.core.inn.join(', ')}
+                </div>
+                <div class="card"><h2>Visual Intel (OCR/Face)</h2>
+                    <b>Faces:</b> ${data.faces.length} detected<br>
+                    <b>OCR Text:</b> ${data.ocr_data.length} sources<br>
+                    ${matches}
+                </div>
+                <div class="card"><h2>Network</h2>
+                    <b>Registrar:</b> ${data.net.registrar || 'N/A'}<br>
+                    <b>Org:</b> ${data.net.org || 'N/A'}
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
